@@ -49,7 +49,7 @@ class PocketbaseService {
 
       // Use the correct field name (e.g., user_id or userId)
       final records = await pb.collection('transactions').getFullList(
-        filter: 'user_id = "${user.id}"', // Updated field name
+        filter: 'user_id ~ "${user.id}"', // Updated field name
       );
 
       debugPrint("✅ Retrieved ${records.length} transactions");
@@ -120,7 +120,41 @@ class PocketbaseService {
     debugPrint("🧹 Auth store cleared");
   }
 
-  getTips() {}
+  /// ✅ Fetch finance tips (if needed).
+  Future<List<RecordModel>> getTips() async {
+    try {
+      final records = await pb.collection('tips').getFullList();
+      debugPrint("✅ Retrieved ${records.length} finance tips");
+      return records;
+    } catch (e) {
+      debugPrint("❌ Error fetching finance tips: $e");
+      return [];
+    }
+  }
 
-  addBudget(Map<String, dynamic> budget) {}
+  /// ✅ Add a budget for the authenticated user.
+  Future<void> addBudget(Map<String, dynamic> budget) async {
+    if (!isAuthenticated()) {
+      throw Exception("❌ User not authenticated");
+    }
+
+    final user = pb.authStore.model;
+    if (user == null) {
+      throw Exception("❌ No user found in authStore");
+    }
+
+    try {
+      await pb.collection('budgets').create(body: {
+        'user_id': user.id, // Updated field name
+        'amount': budget['amount'],
+        'category': budget['category'],
+        'start_date': budget['start_date'],
+        'end_date': budget['end_date'],
+      });
+      debugPrint("✅ Budget added successfully");
+    } catch (e) {
+      debugPrint("❌ Error adding budget: $e");
+      rethrow;
+    }
+  }
 }

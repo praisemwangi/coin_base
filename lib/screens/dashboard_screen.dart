@@ -20,29 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData(); // Fetch data when the screen is initialized
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Schedule authentication check after the current frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuthentication();
-    });
-  }
-
-  Future<void> _checkAuthentication() async {
-    if (!widget.pocketbaseService.isAuthenticated()) {
-      // Show SnackBar after the current frame
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please sign in to view transactions.")),
-        );
-      });
-      // Optionally, navigate to the sign-in screen
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SignInScreen()));
-    }
+    _fetchData();
   }
 
   Future<void> _fetchData() async {
@@ -54,10 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       final transactionRecords = await widget.pocketbaseService.getTransactions();
       debugPrint("Fetched ${transactionRecords.length} transactions");
-      for (var record in transactionRecords) {
-        debugPrint("Transaction: ${record.data}");
-      }
-
       setState(() {
         transactions = transactionRecords.map((record) => record.data).toList();
         isLoading = false;
@@ -73,8 +47,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _deleteTransaction(Map<String, dynamic> transaction) async {
+    try {
+      // Assuming the transaction has an 'id' field
+      final transactionId = transaction['id'];
+      if (transactionId == null) {
+        throw Exception("Transaction ID is null");
+      }
+
+      // Delete the transaction from the backend
+      await widget.pocketbaseService.deleteTransaction(transactionId);
+
+      // Remove the transaction from the local list
+      setState(() {
+        transactions.removeWhere((t) => t['id'] == transactionId);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Transaction deleted successfully")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete transaction: ${e.toString()}")),
+      );
+      debugPrint("Error deleting transaction: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    var _showLimitDialog;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard"),
@@ -90,24 +92,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _fetchData,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildBudgetSummary(),
-                    const SizedBox(height: 16.0),
-                    _buildRecentTransactions(),
-                    const SizedBox(height: 16.0),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const FinanceTipsScreen()),
-                        );
-                      },
-                      child: const Text("Finance Tips"),
-                    ),
-                  ],
-                ),
+              child: ListView(
+                children: [
+                  _buildBudgetSummary(),
+                  const SizedBox(height: 16.0),
+                  _buildRecentTransactions(),
+                  const SizedBox(height: 16.0),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => FinanceTipsScreen(pocketbaseService: widget.pocketbaseService)),
+                      );
+                    },
+                    child: const Text("Finance Tips"),
+                  ),
+                ],
               ),
             ),
       floatingActionButton: FloatingActionButton(
@@ -119,21 +119,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _navigateToAddTransaction() async {
     if (!widget.pocketbaseService.isAuthenticated()) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please sign in to add a transaction.")),
-        );
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please sign in to add a transaction.")),
+      );
       return;
     }
 
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const addTransaction.AddTransactionScreen()),
+      MaterialPageRoute(
+        builder: (context) => const addTransaction.AddTransactionScreen(),
+      ),
     );
 
     if (result == true) {
-      await _fetchData(); // Refresh the data after adding a transaction
+      _fetchData();
     }
   }
 
@@ -210,55 +210,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-  }
-
-  void _showLimitDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Set Spending Limit"),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: "Enter new limit"),
-            onSubmitted: (value) {
-              setState(() {
-                spendingLimit = double.tryParse(value) ?? spendingLimit;
-              });
-              Navigator.of(context).pop();
-            },
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _deleteTransaction(Map<String, dynamic> transaction) async {
-    try {
-      await widget.pocketbaseService.deleteTransaction(transaction['id']);
-      setState(() {
-        transactions.remove(transaction);
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Transaction deleted successfully!")),
-        );
-      });
-    } catch (e) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete transaction: ${e.toString()}")),
-        );
-      });
-      debugPrint("Error deleting transaction: $e");
-    }
   }
 }

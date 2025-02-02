@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:coin_base/screens/welcome_screen.dart';
-import 'package:coin_base/services/pocketbase_service.dart'; // Import your Pocketbase service
+import 'package:coin_base/services/pocketbase_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:coin_base/services/notification_service.dart';
 
-final pocketbaseService = PocketbaseService();
+final PocketbaseService pocketbaseService = PocketbaseService();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensures binding is initialized for async operations
-  
-  // Optional: Perform any Pocketbase-related initialization here if needed
-  // For example, loading initial data or checking for an active session:
+
+  await initNotifications();
+
+  // Check if user is already authenticated
   try {
-    if (pocketbaseService.pb.authStore.isValid) {
-      // Example: print active user's details
-      print("Logged in as: ${pocketbaseService.pb.authStore.model?.toJson()}");
+    if (pocketbaseService.isAuthenticated()) {
+      print("Logged in as: ${pocketbaseService.pb.authStore.model.toJson()}");
     }
   } catch (e) {
     print("Pocketbase initialization failed: $e");
   }
 
   runApp(const MyApp());
+}
+
+Future<void> initNotifications() async {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  await NotificationService.initNotifications();
 }
 
 class MyApp extends StatelessWidget {

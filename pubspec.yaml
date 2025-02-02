@@ -16,8 +16,16 @@ dependencies:
   iconify_flutter_plus: ^1.0.4
   font_awesome_flutter: ^10.8.0
   get: ^4.3.8 
-  pocketbase: ^0.5.0
-
+  pocketbase: ^0.21.0
+  flutter_local_notifications: ^18.0.1
+  sign_in_button: ^3.2.0
+  google_fonts: ^4.0.4
+#  firebase_core: ^3.10.1
+  url_launcher: ^6.3.1
+  intl: ^0.20.2
+  
+#  firebase_auth: ^5.4.1
+  
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "930018571986",
+    "project_id": "coinbase-4c926",
+    "storage_bucket": "coinbase-4c926.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:930018571986:android:e0125585bb0a9c2e631f0b",
+        "android_client_info": {
+          "package_name": "com.mwangihub.coinbase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkvnkuSczujV8Dkdeh-BL1hKiPoqLOpGY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

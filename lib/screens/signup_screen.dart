@@ -1,5 +1,5 @@
+import 'package:coin_base/main.dart';
 import 'package:flutter/material.dart';
-import 'package:coin_base/widgets/custom_scaffold.dart';
 import 'package:coin_base/services/pocketbase_service.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -16,41 +16,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool agreePersonalData = false;
 
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
   Future<void> _signUp() async {
     if (_formSignupKey.currentState!.validate() && agreePersonalData) {
       try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Processing...')),
-        );
-
-        // Call Pocketbase to create a user
-        final newUser = await pocketbaseService.pb.collection('users').create(body: {
+        await pocketbaseService.pb.collection('users').create(body: {
           'name': _fullNameController.text,
           'email': _emailController.text,
           'password': _passwordController.text,
-          'passwordConfirm': _passwordController.text, // Required by PocketBase
+          'passwordConfirm': _passwordController.text,
         });
-
-        // Success feedback
         ScaffoldMessenger.of(context).showSnackBar(
-          
-          SnackBar(content: Text('Sign up successful! Welcome, ${newUser.getStringValue('name')}')),
+          const SnackBar(content: Text('Sign up successful!')),
         );
-
-        // Navigate to another screen, if needed
-        Navigator.pop(context);
+        Navigator.pop(context); // Return to the previous screen
       } catch (e) {
-        // Handle errors (e.g., email already exists)
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text("Sign-up failed: ${e.toString()}")),
         );
       }
     } else if (!agreePersonalData) {
@@ -64,15 +45,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScaffold(
-      child: Column(
+    return Scaffold(
+      body: Column(
         children: [
-          const Expanded(
-            flex: 1,
-            child: SizedBox(
-              height: 10,
-            ),
-          ),
+          const Expanded(flex: 1, child: SizedBox(height: 10)),
           Expanded(
             flex: 7,
             child: Container(
@@ -99,32 +75,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 40.0),
-                      _buildTextField(
+                      TextFormField(
                         controller: _fullNameController,
-                        label: 'Full Name',
-                        hintText: 'Enter Full Name',
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please enter Full name'
-                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          hintText: 'Enter Full Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter Full Name';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 25.0),
-                      _buildTextField(
+                      TextFormField(
                         controller: _emailController,
-                        label: 'Email',
-                        hintText: 'Enter Email',
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please enter Email'
-                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          hintText: 'Enter Email',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter Email';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 25.0),
-                      _buildTextField(
+                      TextFormField(
                         controller: _passwordController,
-                        label: 'Password',
-                        hintText: 'Enter Password',
                         obscureText: true,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please enter Password'
-                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Enter Password',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter Password';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 25.0),
                       Row(
@@ -155,22 +149,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _signUp, // Call sign-up function
+                          onPressed: _signUp,
                           child: const Text('Sign up'),
                         ),
                       ),
                       const SizedBox(height: 30.0),
-                      _buildDividerWithText('Sign up with'),
-                      const SizedBox(height: 30.0),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Icon(Icons.facebook, color: Colors.blue),
-                          Icon(Icons.email, color: Colors.red),
-                          Icon(Icons.apple, color: Colors.black),
-                        ],
-                      ),
-                      const SizedBox(height: 25.0),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -198,58 +181,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hintText,
-    required String? Function(String?) validator,
-    bool obscureText = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.black12),
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDividerWithText(String text) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Divider(
-            thickness: 0.7,
-            color: Colors.grey.withOpacity(0.5),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.black45),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-            thickness: 0.7,
-            color: Colors.grey.withOpacity(0.5),
-          ),
-        ),
-      ],
     );
   }
 }
